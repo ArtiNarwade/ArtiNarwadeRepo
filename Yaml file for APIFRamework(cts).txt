@@ -1,0 +1,41 @@
+name: Java CI with Maven Test and Report Manually triggered
+
+on:
+  workflow_dispatch:
+    inputs:
+      ENV:
+        description: 'Environment'
+        required: true
+        default: "qa"
+      Testngxml:
+        description: 'XML File'
+        required: true
+        default: "TestngMicroservices.xml"
+jobs:
+  build:
+    runs-on: [azsharedtesting] 
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'zulu'
+        cache: maven
+    - run: mvn -version
+    - name: Build with Maven
+      working-directory: "./API_Testing/OTTMicroServicesFramework"
+      run: mvn clean
+    - name: TestCase Execution
+      working-directory: "./API_Testing/OTTMicroServicesFramework"
+      run: mvn test -DsuiteXmlFile="${{ inputs.Testngxml }}" -Dmaven.test.failure.ignore=true -fae -DMY_SECRET="${{ secrets.Passkey }}" -Denv="${{ inputs.ENV }}"
+      timeout-minutes: 60
+    - name: Upload Report
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: test-reports
+        path: "./API_Testing/OTTMicroServicesFramework/ExtentReport"
+    # - name: List Contents
+    #   run: ls -R ./API_Testing/OTTMicroServicesFramework
